@@ -55,7 +55,10 @@ func parseProcessOutputStrict(raw string) ([]ProcessInfo, error) {
 	procs := make([]ProcessInfo, 0, len(rows))
 	for _, row := range rows {
 		fields := strings.Fields(row)
-		if len(fields) < 7 || !isProcessStateToken(fields[2]) {
+		// Darwin can omit comm for a live/transitioning process. Keep its typed
+		// resource and parent fields with an unknown name instead of rejecting
+		// the whole table and losing parent attribution for every other row.
+		if len(fields) < 6 || !isProcessStateToken(fields[2]) {
 			return nil, fmt.Errorf("unexpected ps process row")
 		}
 		pid, pidErr := strconv.Atoi(fields[0])
@@ -65,7 +68,7 @@ func parseProcessOutputStrict(raw string) ([]ProcessInfo, error) {
 		rssKB, rssErr := strconv.ParseUint(fields[5], 10, 64)
 		command := strings.Join(fields[6:], " ")
 		if pidErr != nil || ppidErr != nil || cpuErr != nil || memErr != nil || rssErr != nil ||
-			pid <= 0 || ppid < 0 || command == "" {
+			pid <= 0 || ppid < 0 {
 			return nil, fmt.Errorf("unexpected ps process row")
 		}
 		procs = append(procs, ProcessInfo{

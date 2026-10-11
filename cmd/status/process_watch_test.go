@@ -204,6 +204,17 @@ func TestFallbackCountsZombiesWithoutGuessingParents(t *testing.T) {
 	}
 }
 
+func TestPrimaryProcessTableRetainsNamelessDarwinRow(t *testing.T) {
+	procs, err := parseProcessOutputStrict("123 1 SN 0.0 0.1 19088 \n124 123 Z 0.0 0.0 0 child")
+	if err != nil || len(procs) != 2 || procs[0].Name != "" || procs[0].Command != "" || procs[0].PID != 123 {
+		t.Fatalf("valid nameless row lost: %+v %v", procs, err)
+	}
+	count, parents, complete := summarizeZombies(procs, 3, true)
+	if count != 1 || len(parents) != 0 || complete {
+		t.Fatalf("unknown parent name must stay incomplete: count=%d parents=%+v complete=%v", count, parents, complete)
+	}
+}
+
 func TestStrictProcessParsersRejectPartialTables(t *testing.T) {
 	if _, err := parseProcessOutputStrict("123 1 Z 0.0 0.0 0 child\nbad line"); err == nil {
 		t.Fatal("parseProcessOutputStrict() accepted a partial process table")
