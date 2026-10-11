@@ -23,7 +23,9 @@ const (
 
 var (
 	// Command-line flags
-	jsonOutput       = flag.Bool("json", false, "output metrics as JSON instead of TUI")
+	jsonOutput = flag.Bool("json", false, "output metrics as JSON instead of TUI")
+	// A port is an explicit diagnostic operand; the default dashboard must not scan sockets.
+	portQuery        = flag.String("port", "", "look up one local TCP listening port (1-65535)")
 	procCPUThreshold = flag.Float64("proc-cpu-threshold", 100, "alert when a process stays above this CPU percent")
 	procCPUWindow    = flag.Duration("proc-cpu-window", 5*time.Minute, "continuous duration a process must exceed the CPU threshold")
 	procCPUAlerts    = flag.Bool("proc-cpu-alerts", true, "enable persistent high-CPU process alerts")
@@ -97,6 +99,23 @@ func processWatchOptionsFromFlags() ProcessWatchOptions {
 }
 
 func validateFlags() error {
+	if portQuerySelected() {
+		if _, err := parsePort(*portQuery); err != nil {
+			return err
+		}
+		var conflict string
+		flag.CommandLine.Visit(func(f *flag.Flag) {
+			if f.Name != "port" && f.Name != "json" {
+				conflict = f.Name
+			}
+		})
+		if conflict != "" {
+			return fmt.Errorf("--port cannot be combined with --%s; it is a one-shot listener query", conflict)
+		}
+		if flag.CommandLine.NArg() != 0 {
+			return fmt.Errorf("--port does not accept positional arguments")
+		}
+	}
 	if *procCPUThreshold < 0 {
 		return fmt.Errorf("--proc-cpu-threshold must be >= 0")
 	}
@@ -327,6 +346,7 @@ switches to a single JSON snapshot when stdout is not a terminal.
 
 Options:
   --json                          Output one metrics snapshot as JSON
+  --port PORT                     Query visible local TCP listeners (1-65535)
   --watch                         Stream snapshots as newline-delimited JSON
   --interval DURATION             With --watch, collection interval (default 1s)
   --proc-cpu-alerts               Enable high-CPU process alerts (default true)
@@ -337,6 +357,8 @@ Options:
 Examples:
   mo status                       Interactive dashboard
   mo status --json                One machine-readable snapshot
+  mo status --port 8080            One read-only TCP listener query
+  mo status --port 8080 --json     Listener query as JSON
   mo status --watch --interval 2s Continuous NDJSON stream
 `
 
@@ -345,7 +367,14 @@ Examples:
 // every bash subcommand does, rather than the flag package's stderr-and-2.
 // It returns the exit code and whether main should keep running.
 func parseArgs(args []string, stdout, stderr io.Writer) (int, bool) {
-	flag.CommandLine.Init("mo status", flag.ContinueOnError)
+	// Init retains visited flags. Use a fresh set so repeated parses cannot
+	// inherit a previous query or dashboard option (including embedding tests).
+	fresh := flag.NewFlagSet("mo status", flag.ContinueOnError)
+	flag.CommandLine.VisitAll(func(f *flag.Flag) {
+		fresh.Var(f.Value, f.Name, f.Usage)
+		fresh.Lookup(f.Name).DefValue = f.DefValue
+	})
+	flag.CommandLine = fresh
 	// Parse must not print: this function decides which stream each message
 	// belongs on, and the default handler writes usage to stderr for both.
 	flag.CommandLine.SetOutput(io.Discard)
@@ -373,6 +402,12 @@ func parseArgs(args []string, stdout, stderr io.Writer) (int, bool) {
 func main() {
 	if code, keepGoing := parseArgs(os.Args[1:], os.Stdout, os.Stderr); !keepGoing {
 		os.Exit(code)
+	}
+
+	// Route one-shot diagnostics before constructing health collectors or a TUI.
+	if portQuerySelected() {
+		port, _ := parsePort(*portQuery) // parseArgs already validated the operand.
+		os.Exit(runPortQuery(port, shouldUseJSONOutput(*jsonOutput, os.Stdout), os.Stdout, os.Stderr))
 	}
 
 	if *watchMode {

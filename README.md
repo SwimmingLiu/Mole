@@ -286,6 +286,8 @@ Proxy   HTTP · 192.168.1.100             Chrome     ▮▮▮▯▯  28.3%
 
 The health score combines CPU, memory, disk capacity, SMART status, I/O, thermals, battery state, and uptime, with color-coded ranges. Press `k` to toggle the cat, `c` to cycle the number of CPU cores shown, or `q` to quit; display preferences are saved.
 
+To identify a local TCP listener, run `mo status --port 8080`. This read-only query lists visible IPv4/IPv6 listeners with their PID, process name, and executable path when its identity can be confirmed. It uses a shared three-second budget and never prompts for administrator access. Visibility is limited to accessible processes: an empty result does not prove the port is free. Paths that cannot be confirmed are shown as unknown. Use `mo status --port 8080 --json` for the independent listener-query object; piped output also switches to JSON. The query cannot be combined with watch, interval, or process-alert options.
+
 <details>
 <summary><strong>JSON, NDJSON, and process alerts</strong></summary>
 

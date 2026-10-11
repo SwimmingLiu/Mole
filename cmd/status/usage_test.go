@@ -16,11 +16,14 @@ func resetFlags(t *testing.T) {
 	savedJSON, savedWatch := *jsonOutput, *watchMode
 	savedThreshold, savedWindow := *procCPUThreshold, *procCPUWindow
 	savedInterval := *watchInterval
+	// Port queries share the flag set; leaking the operand would redirect later cases.
+	savedPort := *portQuery
 	t.Cleanup(func() {
 		flag.CommandLine.Init("mo status", flag.ExitOnError)
 		*jsonOutput, *watchMode = savedJSON, savedWatch
 		*procCPUThreshold, *procCPUWindow = savedThreshold, savedWindow
 		*watchInterval = savedInterval
+		*portQuery = savedPort
 	})
 }
 
