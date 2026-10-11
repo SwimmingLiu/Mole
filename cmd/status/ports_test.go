@@ -143,6 +143,7 @@ func TestPortScanEmptyDiagnosticsAndFailures(t *testing.T) {
 		{"empty", nil, nil, exitOne, ""},
 		{"empty-success", nil, nil, nil, ""},
 		{"permission", nil, []byte("Operation not permitted"), exitOne, "permission_denied"},
+		{"permission-before-start", nil, nil, os.ErrPermission, "permission_denied"},
 		{"warning", listenerRecord("10", "worker", "IPv4", "*:8080"), []byte("warning"), nil, "diagnostic_output"},
 		{"partial-failed", listenerRecord("10", "worker", "IPv4", "*:8080"), nil, exitOne, "collection_failed"},
 		{"missing", nil, nil, os.ErrNotExist, "tool_unavailable"},
@@ -214,6 +215,30 @@ func TestPortResultTextJSONAndWriterFailures(t *testing.T) {
 	var stderr bytes.Buffer
 	if writePortResult(writer, &stderr, result, true) != 1 {
 		t.Fatal("output failure returned success")
+	}
+}
+
+func TestPortResultErrorsRemainDistinctInTextAndJSON(t *testing.T) {
+	for _, kind := range []string{"permission_denied", "tool_unavailable", "timeout", "cancelled", "malformed_output"} {
+		for _, asJSON := range []bool{false, true} {
+			result := portResult{Query: portOperand{"TCP", 8080}, Matches: []portMatch{}, Visibility: "visible_processes"}
+			result = failPortQuery(result, errors.New("probe unavailable"), kind)
+			var stdout, stderr bytes.Buffer
+			code := writePortResult(&stdout, &stderr, result, asJSON)
+			want := 1
+			if kind == "cancelled" {
+				want = 130
+			}
+			if code != want || !strings.Contains(stderr.String(), kind) || strings.Contains(stdout.String(), "No visible TCP listeners found") {
+				t.Fatalf("cause hidden: kind=%s json=%v code=%d stdout=%q stderr=%q", kind, asJSON, code, &stdout, &stderr)
+			}
+			if asJSON {
+				var decoded portResult
+				if err := json.Unmarshal(stdout.Bytes(), &decoded); err != nil || decoded.Error.Kind != kind || decoded.Complete {
+					t.Fatalf("wrong failure JSON: %+v %v", decoded, err)
+				}
+			}
+		}
 	}
 }
 

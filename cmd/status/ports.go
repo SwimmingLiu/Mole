@@ -24,6 +24,7 @@ import (
 )
 
 const portQueryTimeout = 3 * time.Second
+const portCommandDrainTime = 50 * time.Millisecond
 const portOutputLimit = 4 << 20
 
 type portMatch struct {
@@ -119,7 +120,7 @@ func collectPortQuery(ctx context.Context, port int, deps portDependencies) port
 		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
 			kind = "tool_unavailable"
 		}
-		if permissionDiagnostic(diagnostics) {
+		if errors.Is(err, os.ErrPermission) || permissionDiagnostic(diagnostics) {
 			kind = "permission_denied"
 		}
 		return failPortQuery(result, fmt.Errorf("could not collect visible TCP listeners"), kind)
@@ -323,7 +324,7 @@ func runPortCommand(ctx context.Context, executable string, args ...string) ([]b
 	// Kill the owned group, including inherited pipe writers, on cancellation
 	// and after completion. A wrapper must not leave work behind the deadline.
 	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
-	cmd.WaitDelay = 50 * time.Millisecond
+	cmd.WaitDelay = portCommandDrainTime
 	var stdout, stderr boundedPortBuffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	err := cmd.Run()
@@ -336,7 +337,9 @@ func runPortCommand(ctx context.Context, executable string, args ...string) ([]b
 func runPortQuery(port int, asJSON bool, stdout, stderr io.Writer) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	ctx, cancel := context.WithTimeout(ctx, portQueryTimeout)
+	// Reserve pipe-drain time inside the advertised total budget, rather than
+	// allowing CommandContext cleanup to extend a three-second scan deadline.
+	ctx, cancel := context.WithTimeout(ctx, portQueryTimeout-portCommandDrainTime)
 	defer cancel()
 	deps := portDependencies{scanPort, snapshotPortIdentities, readPortIdentity, readPortPath}
 	var result portResult
@@ -382,7 +385,7 @@ func writePortResult(stdout, stderr io.Writer, result portResult, asJSON bool) i
 		return 1
 	}
 	if result.Error != nil {
-		_, _ = fmt.Fprintf(stderr, "status: %s\n", escapePortText(result.Error.Message))
+		_, _ = fmt.Fprintf(stderr, "status: TCP listener query %s: %s\n", result.Error.Kind, escapePortText(result.Error.Message))
 		if result.Error.Kind == "cancelled" {
 			return 130
 		}
