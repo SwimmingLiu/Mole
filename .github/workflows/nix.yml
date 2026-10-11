@@ -26,20 +26,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Nix
         uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
-      - name: Build package
+      - name: Flake check
         shell: bash
         run: |
-          build_log="$RUNNER_TEMP/nix-build.log"
+          check_log="$RUNNER_TEMP/nix-flake-check.log"
           status=0
-          nix build --no-write-lock-file --print-build-logs .#mole 2>&1 | tee "$build_log" || status=$?
+          nix flake check --no-write-lock-file --print-build-logs 2>&1 | tee "$check_log" || status=$?
           if [[ $status -ne 0 ]]; then
             # A go.mod or go.sum change without a matching vendorHash fails here; name the new hash.
-            got=$(awk '/hash mismatch in fixed-output derivation .*-go-modules\.drv/ { m = 1; next } m && $1 == "got:" { print $2; exit }' "$build_log")
+            got=$(awk '/hash mismatch in fixed-output derivation .*-go-modules\.drv/ { m = 1; next } m && $1 == "got:" { print $2; exit }' "$check_log")
             if [[ -n "$got" ]]; then
-              echo "::error file=flake.nix::vendorHash no longer matches go.mod/go.sum. Set vendorHash = \"$got\"; in flake.nix."
+              echo "::error file=package.nix::vendorHash no longer matches go.mod/go.sum. Set vendorHash = \"$got\"; in package.nix."
             fi
           fi
           exit "$status"
+      - name: Link package
+        # Already built by the flake check; this only creates the result symlink.
+        run: nix build --no-write-lock-file .#mole
       - name: Check installed package
         run: python3 scripts/test_nix_package.py result
       - name: Check profile install, upgrade and removal

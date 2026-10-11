@@ -1,3 +1,5 @@
+<p align="right"><b>macOS</b> · <a href="https://github.com/tw93/Mole/tree/windows">Windows</a></p>
+
 <div align="center">
   <h1>Mole</h1>
   <p><b>Macのディープクリーン、アプリアンインストール、システム最適化、ディスク分析、ステータス監視。無料のオープンソースCLIと、ネイティブMacアプリ。</b></p>
@@ -46,6 +48,8 @@ curl -fsSL https://raw.githubusercontent.com/tw93/mole/main/install.sh | bash
 ```powershell
 iwr -useb https://raw.githubusercontent.com/tw93/Mole/windows/quick-install.ps1 | iex
 ```
+
+Moleの配布元はHomebrew、このGitHubリポジトリ、Mac版の[mole.fit](https://mole.fit/)だけです。「Moleベース」をうたう別のアプリや、エンコードされたコマンドをターミナルに貼り付けるよう求めるサイトはMoleとは無関係です。
 
 **主要コマンド**
 

@@ -88,3 +88,7 @@ coverage.html
 session.json
 run_tests.ps1
 mole_guidelines.md
+
+# Nix build output symlinks
+/result
+/result-*

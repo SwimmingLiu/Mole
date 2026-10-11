@@ -1,3 +1,5 @@
+<p align="right"><b>macOS</b> · <a href="https://github.com/tw93/Mole/tree/windows">Windows</a></p>
+
 <div align="center">
   <h1>Mole</h1>
   <p><b>Tiefenreinigung, App-Deinstallation, Systemoptimierung, Festplattenanalyse und Statusüberwachung für Mac. Kostenloses Open-Source-CLI, plus native Mac-App.</b></p>
@@ -46,6 +48,8 @@ curl -fsSL https://raw.githubusercontent.com/tw93/mole/main/install.sh | bash
 ```powershell
 iwr -useb https://raw.githubusercontent.com/tw93/Mole/windows/quick-install.ps1 | iex
 ```
+
+Mole wird nur über Homebrew, dieses GitHub-Repository und [mole.fit](https://mole.fit/) für die Mac-App verteilt. Websites, die eine „auf Mole basierende“ App anbieten oder dich auffordern, einen kodierten Befehl ins Terminal einzufügen, haben nichts mit Mole zu tun.
 
 **Befehle**
 

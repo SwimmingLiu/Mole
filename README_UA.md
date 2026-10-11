@@ -1,3 +1,5 @@
+<p align="right"><b>macOS</b> · <a href="https://github.com/tw93/Mole/tree/windows">Windows</a></p>
+
 <div align="center">
   <h1>Mole</h1>
   <p><b>Глибоке очищення, видалення застосунків, оптимізація, аналіз диска й моніторинг вашого Mac. Безкоштовний CLI з відкритим кодом, а також нативний застосунок для Mac.</b></p>
@@ -46,6 +48,8 @@ curl -fsSL https://raw.githubusercontent.com/tw93/mole/main/install.sh | bash
 ```powershell
 iwr -useb https://raw.githubusercontent.com/tw93/Mole/windows/quick-install.ps1 | iex
 ```
+
+Mole поширюється лише через Homebrew, цей репозиторій GitHub і [mole.fit](https://mole.fit/) для застосунку Mac. Сайти, що пропонують застосунок «на основі Mole» або просять вставити закодовану команду в Термінал, не мають стосунку до Mole.
 
 **Запуск**
 

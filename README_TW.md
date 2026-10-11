@@ -1,3 +1,5 @@
+<p align="right"><b>macOS</b> · <a href="https://github.com/tw93/Mole/tree/windows">Windows</a></p>
+
 <div align="center">
   <h1>Mole</h1>
   <p><b>Mac 深度清理、應用程式解除安裝、系統最佳化、磁碟分析與狀態監控，免費開源命令列工具，另有原生 Mac App</b></p>
@@ -46,6 +48,8 @@ curl -fsSL https://raw.githubusercontent.com/tw93/mole/main/install.sh | bash
 ```powershell
 iwr -useb https://raw.githubusercontent.com/tw93/Mole/windows/quick-install.ps1 | iex
 ```
+
+Mole 只透過 Homebrew、這個 GitHub 倉庫和 Mac 版官網 [mole.fit](https://mole.fit/) 發布，自稱基於 Mole 的其他 App，或要你往終端機貼上一段編碼指令的網站，都和 Mole 無關。
 
 **常用指令**
 

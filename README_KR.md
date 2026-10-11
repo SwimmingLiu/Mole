@@ -1,3 +1,5 @@
+<p align="right"><b>macOS</b> · <a href="https://github.com/tw93/Mole/tree/windows">Windows</a></p>
+
 <div align="center">
   <h1>Mole</h1>
   <p><b>Mac 심층 정리, 앱 제거, 시스템 최적화, 디스크 분석 및 상태 모니터링. 무료 오픈소스 CLI와 네이티브 Mac 앱.</b></p>
@@ -46,6 +48,8 @@ curl -fsSL https://raw.githubusercontent.com/tw93/mole/main/install.sh | bash
 ```powershell
 iwr -useb https://raw.githubusercontent.com/tw93/Mole/windows/quick-install.ps1 | iex
 ```
+
+Mole은 Homebrew, 이 GitHub 저장소, Mac 앱용 [mole.fit](https://mole.fit/)에서만 배포됩니다. "Mole 기반"이라고 소개하는 다른 앱이나 인코딩된 명령을 터미널에 붙여 넣으라고 하는 사이트는 Mole과 관련이 없습니다.
 
 **주요 명령어**
 
