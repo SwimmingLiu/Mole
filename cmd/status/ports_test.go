@@ -81,6 +81,19 @@ func TestPortRecordsRefuseIncompleteOrUnexpectedData(t *testing.T) {
 	}
 }
 
+func TestPortRecordsKeepScopedIPv6InterfacesDistinct(t *testing.T) {
+	raw := listenerRecord("10", "worker", "IPv6", "[fe80::1%en0]:8080")
+	raw = append(raw, listenerRecord("10", "worker", "IPv6", "[fe80::1%en1]:8080")...)
+	matches, err := parsePortRecords(raw, 8080)
+	if err != nil || len(matches) != 2 || matches[0].Address != "fe80::1%en0" || matches[1].Address != "fe80::1%en1" {
+		t.Fatalf("IPv6 zone lost: %+v %v", matches, err)
+	}
+	wrongFamily := listenerRecord("10", "worker", "IPv4", "[::1]:8080")
+	if _, err := parsePortRecords(wrongFamily, 8080); err == nil {
+		t.Fatal("mismatched address family accepted")
+	}
+}
+
 func fakePortDependencies(raw []byte) portDependencies {
 	identity := portIdentity{Seconds: 10, Microseconds: 42, Name: "worker"}
 	return portDependencies{

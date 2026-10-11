@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/netip"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -212,8 +213,10 @@ func parsePortRecords(raw []byte, port int) ([]portMatch, error) {
 			return fmt.Errorf("invalid local port")
 		}
 		if host != "*" {
-			ip := net.ParseIP(host)
-			if ip == nil {
+			// Scoped IPv6 listeners carry an interface zone; preserve it instead
+			// of rejecting a valid endpoint or collapsing two interface bindings.
+			ip, err := netip.ParseAddr(host)
+			if err != nil || (family == "IPv4" && !ip.Is4()) || (family == "IPv6" && ip.Is4()) {
 				return fmt.Errorf("non-numeric listener address")
 			}
 			host = ip.String()
