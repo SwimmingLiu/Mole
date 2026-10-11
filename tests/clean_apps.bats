@@ -10,10 +10,46 @@ setup_file() {
     export MOLE_TEST_MODE
 
     mkdir -p "$HOME"
+
+    # Installed-app fixtures must not enumerate real fallback roots: a broken
+    # host cask otherwise makes valid fixture scans fail before their assertions.
+    # Only the app-inventory find shape is intercepted; fixture and cleanup
+    # traversal still reaches BSD find, and individual test mocks stay first.
+    local fixture_bin="$HOME/fixture-bin"
+    mkdir -p "$fixture_bin"
+    cat > "$fixture_bin/find" <<'STUB'
+#!/bin/bash
+case "${1:-}" in
+    /Applications | /System/Applications | /opt/homebrew/Caskroom | /usr/local/Caskroom)
+        if [[ $# -eq 7 && "$2" == -maxdepth && "$3" == 3 && "$4" == -type &&
+            "$5" == d && "$6" == -iname && "$7" == '*.app' ]]; then
+            exit 0
+        fi
+        ;;
+esac
+exec /usr/bin/find "$@"
+STUB
+    chmod +x "$fixture_bin/find"
+    export PATH="$fixture_bin:$PATH"
 }
 
 teardown_file() {
     mole_test_teardown_home
+}
+
+@test "installed-app fixture traversal excludes host roots and keeps real fixture evidence" {
+    local root
+    for root in /Applications /System/Applications /opt/homebrew/Caskroom /usr/local/Caskroom; do
+        run find "$root" -maxdepth 3 -type d -iname '*.app'
+        [ "$status" -eq 0 ] || return 1
+        [ -z "$output" ] || return 1
+    done
+    mkdir -p "$BATS_TEST_TMPDIR/apps/Fixture.app"
+    run find "$BATS_TEST_TMPDIR/apps" -maxdepth 3 -type d -iname '*.app'
+    [ "$status" -eq 0 ] || return 1
+    [ "$output" = "$BATS_TEST_TMPDIR/apps/Fixture.app" ] || return 1
+    run find "$BATS_TEST_TMPDIR/missing" -maxdepth 3 -type d -iname '*.app'
+    [ "$status" -ne 0 ] || return 1
 }
 
 @test "clean_ds_store_tree reports dry-run summary" {
